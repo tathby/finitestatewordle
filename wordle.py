@@ -15,7 +15,12 @@ class RoundState(Enum):
 
 
 class Wordle:
-    def __init__(self, secret_word: str, input_func: Callable[[str], str] = input, output_func: Callable[[str], None] = print):
+    def __init__(
+        self,
+        secret_word: str,
+        input_func: Callable[[str], str] = input,
+        output_func: Callable[[str], None] = print,
+    ):
         if len(secret_word) != 5 or not secret_word.isalpha():
             raise ValueError("secret_word must be exactly 5 alphabetic letters")
 
@@ -55,23 +60,15 @@ class Wordle:
 
             elif state == RoundState.IS_WINNER:
                 self.has_won = self.IsWinner()
-                if self.has_won:
-                    state = RoundState.DISPLAY
-                elif self.attempt_count >= 6:
+                if self.has_won or self.attempt_count >= 6:
                     state = RoundState.DISPLAY
                 else:
                     state = RoundState.REVIEW
 
             elif state == RoundState.REVIEW:
-                present_letters = sorted({ch for ch in self._current_guess if ch in self.secret_word})
-                correct_positions = [
-                    ch.upper() if self._current_guess[idx] == self.secret_word[idx] else "_"
-                    for idx, ch in enumerate(self._current_guess)
-                ]
-
-                present = " ".join(letter.upper() for letter in present_letters) if present_letters else "None"
-                self._output(f"Letters present in secret word: {present}")
-                self._output(f"Correct position pattern: {' '.join(correct_positions)}")
+                self._output("\nGuess review:")
+                self._display_attempt_history()
+                self._output("Legend: [✓]=right letter/right spot  [?]=in word/wrong spot  [x]=not in word")
                 state = RoundState.CONFIRM_AFTER_REVIEW
 
             elif state == RoundState.CONFIRM_AFTER_REVIEW:
@@ -89,13 +86,48 @@ class Wordle:
     def IsWinner(self) -> bool:
         return self._current_guess == self.secret_word
 
+    def _evaluate_guess(self, guess: str) -> list[str]:
+        statuses = ["absent"] * 5
+        secret_remaining: dict[str, int] = {}
+
+        for idx, letter in enumerate(self.secret_word):
+            if guess[idx] == letter:
+                statuses[idx] = "correct"
+            else:
+                secret_remaining[letter] = secret_remaining.get(letter, 0) + 1
+
+        for idx, letter in enumerate(guess):
+            if statuses[idx] == "correct":
+                continue
+
+            remaining = secret_remaining.get(letter, 0)
+            if remaining > 0:
+                statuses[idx] = "present"
+                secret_remaining[letter] = remaining - 1
+
+        return statuses
+
+    def _format_guess_feedback(self, guess: str) -> str:
+        markers = {
+            "correct": "✓",
+            "present": "?",
+            "absent": "x",
+        }
+
+        statuses = self._evaluate_guess(guess)
+        pieces = [f"{letter.upper()}[{markers[state]}]" for letter, state in zip(guess, statuses)]
+        return " ".join(pieces)
+
+    def _display_attempt_history(self) -> None:
+        self._output("Previous guesses with letter feedback:")
+        for index, attempt in enumerate(self.attempts, start=1):
+            self._output(f"{index}. {self._format_guess_feedback(attempt)}")
+
     def Display(self) -> None:
         self._output("\nRound Complete")
-        self._output("Attempts:")
-        for index, attempt in enumerate(self.attempts, start=1):
-            self._output(f"{index}. {attempt}")
-
+        self._display_attempt_history()
         self._output(f"Total attempts: {self.attempt_count}")
+
         if self.has_won:
             self._output("You Won.")
         else:
