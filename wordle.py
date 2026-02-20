@@ -1,7 +1,57 @@
 from __future__ import annotations
 
+import random
 from enum import Enum, auto
-from typing import Callable
+from typing import Callable, Sequence
+
+
+WORD_BANK: tuple[str, ...] = (
+    "abide", "adore", "agent", "aisle", "amber", "angel", "apple", "arena", "argue", "armor",
+    "badge", "baker", "basic", "beach", "beard", "began", "belly", "bench", "berry", "bingo",
+    "black", "blade", "blame", "blank", "blast", "blend", "bless", "blind", "blink", "block",
+    "bloom", "blown", "board", "boast", "boost", "bound", "brain", "brake", "brand", "brave",
+    "bread", "break", "brick", "bride", "brief", "bring", "broad", "broke", "brown", "brush",
+    "cabin", "cable", "camel", "candy", "caper", "cargo", "carve", "catch", "cause", "chain",
+    "chair", "charm", "chase", "cheap", "check", "chest", "chief", "child", "chime", "choir",
+    "claim", "class", "clean", "clear", "clerk", "click", "cliff", "climb", "clock", "close",
+    "cloud", "coast", "color", "comic", "couch", "could", "count", "court", "cover", "craft",
+    "crane", "crash", "cream", "crime", "crisp", "cross", "crowd", "crown", "curve", "cycle",
+    "dance", "dealt", "delay", "depth", "diary", "digit", "diner", "doubt", "dozen", "draft",
+    "drain", "drama", "dream", "dress", "drift", "drink", "drive", "drove", "eager", "eagle",
+    "early", "earth", "elite", "enjoy", "entry", "equal", "error", "event", "exact", "exist",
+    "faith", "fancy", "favor", "feast", "fence", "field", "final", "flame", "flash", "fleet",
+    "floor", "focus", "force", "frame", "fresh", "front", "frost", "fruit", "ghost", "giant",
+    "glade", "globe", "grace", "grade", "grain", "grand", "grant", "grape", "graph", "grasp",
+    "great", "green", "grief", "gross", "group", "guard", "guest", "guide", "habit", "happy",
+    "heart", "heavy", "honey", "horse", "hotel", "house", "human", "humor", "ideal", "image",
+    "index", "inner", "input", "issue", "ivory", "jelly", "joint", "judge", "juice", "knock",
+    "known", "label", "labor", "laser", "later", "laugh", "layer", "learn", "least", "leave",
+    "legal", "lemon", "level", "light", "limit", "local", "logic", "loose", "lucky", "lunch",
+    "magic", "major", "maker", "march", "match", "maybe", "medal", "mercy", "metal", "might",
+    "minor", "model", "money", "month", "moral", "motor", "mount", "mouse", "mouth", "movie",
+    "music", "naive", "nerve", "never", "night", "noble", "noise", "north", "novel", "nurse",
+    "ocean", "offer", "olive", "orbit", "order", "organ", "other", "ought", "outer", "owner",
+    "panel", "party", "peace", "phone", "photo", "piece", "pilot", "pitch", "plain", "plane",
+    "plant", "plate", "point", "pound", "power", "press", "price", "pride", "prime", "print",
+    "prize", "proof", "proud", "queen", "quick", "quiet", "quite", "radio", "raise", "range",
+    "rapid", "ratio", "reach", "react", "ready", "refer", "reply", "right", "rival", "river",
+    "robot", "rough", "round", "route", "royal", "rural", "saint", "scale", "scene", "scope",
+    "score", "sense", "serve", "shade", "shake", "shall", "shape", "share", "sharp", "sheep",
+    "sheet", "shelf", "shell", "shift", "shine", "shirt", "shock", "shoot", "shore", "short",
+    "shown", "sight", "since", "skill", "sleep", "slice", "slide", "slope", "small", "smart",
+    "smile", "smoke", "solid", "solve", "sound", "south", "space", "spare", "speak", "speed",
+    "spend", "spice", "spike", "spite", "split", "sport", "spray", "staff", "stage", "stair",
+    "stake", "stand", "stare", "start", "state", "steam", "steel", "stick", "still", "stock",
+    "stone", "store", "storm", "story", "strip", "stuck", "study", "stuff", "style", "sugar",
+    "table", "taste", "teach", "tease", "thank", "their", "theme", "there", "thick", "thing",
+    "think", "third", "those", "three", "throw", "tight", "tired", "title", "today", "token",
+    "topic", "total", "touch", "tough", "tower", "track", "trade", "train", "treat", "trend",
+    "trial", "tribe", "trick", "truck", "truly", "trust", "truth", "twice", "under", "union",
+    "unity", "until", "upper", "urban", "usage", "usual", "valid", "value", "video", "visit",
+    "vital", "voice", "waste", "watch", "water", "wheel", "where", "which", "while", "white",
+    "whole", "whose", "woman", "world", "worry", "worth", "would", "write", "wrong", "young",
+    "youth", "zebra",
+)
 
 
 class RoundState(Enum):
@@ -12,6 +62,15 @@ class RoundState(Enum):
     REVIEW = auto()
     CONFIRM_AFTER_REVIEW = auto()
     DISPLAY = auto()
+
+
+def choose_secret_word(
+    word_bank: Sequence[str] = WORD_BANK,
+    chooser: Callable[[Sequence[str]], str] = random.choice,
+) -> str:
+    if not word_bank:
+        raise ValueError("word_bank must contain at least one word")
+    return chooser(word_bank)
 
 
 class Wordle:
@@ -195,7 +254,7 @@ def run() -> None:
             break
 
         if selection == "1":
-            game = Wordle(secret_word="crane")
+            game = Wordle(secret_word=choose_secret_word())
             game.PlayRound()
         else:
             print("Invalid selection. Please choose 1 or 2.")

@@ -1,9 +1,24 @@
 import unittest
 
-from wordle import Wordle
+from wordle import WORD_BANK, Wordle, choose_secret_word
 
 
 class TestWordle(unittest.TestCase):
+    def test_word_bank_is_long_and_five_letter(self):
+        self.assertGreaterEqual(len(WORD_BANK), 100)
+        self.assertTrue(all(len(word) == 5 and word.isalpha() for word in WORD_BANK))
+
+    def test_choose_secret_word_uses_chooser(self):
+        choices_seen = []
+
+        def fake_chooser(words):
+            choices_seen.append(tuple(words))
+            return "crane"
+
+        result = choose_secret_word(word_bank=("crane", "slate"), chooser=fake_chooser)
+        self.assertEqual("crane", result)
+        self.assertEqual(1, len(choices_seen))
+
     def test_is_winner_true(self):
         game = Wordle("crane", input_func=lambda _: "", output_func=lambda _: None)
         game._current_guess = "crane"
