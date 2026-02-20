@@ -27,6 +27,7 @@ class Wordle:
         self.secret_word = secret_word.lower()
         self.attempt_count = 0
         self.has_won = False
+        self.has_quit = False
         self.attempts: list[str] = []
         self._current_guess = ""
         self._input = input_func
@@ -37,7 +38,15 @@ class Wordle:
 
         while True:
             if state == RoundState.WORD_ENTRY:
-                guess = self._input("Enter a 5-letter guess: ").strip().lower()
+                guess = self._input(
+                    "Enter a 5-letter guess (or type 'history' / 'quit'): "
+                ).strip().lower()
+
+                if self._handle_round_command(guess):
+                    if self.has_quit:
+                        state = RoundState.DISPLAY
+                    continue
+
                 if len(guess) != 5 or not guess.isalpha():
                     self._output("Invalid guess. Please enter exactly five letters.")
                     continue
@@ -46,13 +55,19 @@ class Wordle:
                 state = RoundState.CONFIRM
 
             elif state == RoundState.CONFIRM:
-                confirm = self._input(f"Use '{self._current_guess}'? (y/n): ").strip().lower()
-                if confirm in {"n", "no"}:
+                confirm = self._input(
+                    f"Use '{self._current_guess}'? (y/n, or 'quit'): "
+                ).strip().lower()
+
+                if confirm in {"q", "quit", "exit"}:
+                    self.has_quit = True
+                    state = RoundState.DISPLAY
+                elif confirm in {"n", "no"}:
                     state = RoundState.WORD_ENTRY
                 elif confirm in {"y", "yes"}:
                     state = RoundState.SCORE
                 else:
-                    self._output("Please answer with y or n.")
+                    self._output("Please answer with y or n (or quit).")
 
             elif state == RoundState.SCORE:
                 self.Score()
@@ -72,12 +87,36 @@ class Wordle:
                 state = RoundState.CONFIRM_AFTER_REVIEW
 
             elif state == RoundState.CONFIRM_AFTER_REVIEW:
-                self._input("Press Enter to continue to next guess...")
-                state = RoundState.WORD_ENTRY
+                action = self._input(
+                    "Next action: (n)ext guess, (h)istory, or (q)uit: "
+                ).strip().lower()
+
+                if action in {"n", "next", ""}:
+                    state = RoundState.WORD_ENTRY
+                elif action in {"h", "history"}:
+                    self._output("\nPrevious guesses with letter feedback:")
+                    self._display_attempt_history(show_header=False)
+                elif action in {"q", "quit", "exit"}:
+                    self.has_quit = True
+                    state = RoundState.DISPLAY
+                else:
+                    self._output("Invalid option. Choose n, h, or q.")
 
             elif state == RoundState.DISPLAY:
                 self.Display()
                 return
+
+    def _handle_round_command(self, command: str) -> bool:
+        if command in {"q", "quit", "exit"}:
+            self.has_quit = True
+            return True
+
+        if command in {"h", "history"}:
+            self._output("\nPrevious guesses with letter feedback:")
+            self._display_attempt_history(show_header=False)
+            return True
+
+        return False
 
     def Score(self) -> None:
         self.attempts.append(self._current_guess)
@@ -118,8 +157,14 @@ class Wordle:
         pieces = [f"{letter.upper()}[{markers[state]}]" for letter, state in zip(guess, statuses)]
         return " ".join(pieces)
 
-    def _display_attempt_history(self) -> None:
-        self._output("Previous guesses with letter feedback:")
+    def _display_attempt_history(self, show_header: bool = True) -> None:
+        if show_header:
+            self._output("Previous guesses with letter feedback:")
+
+        if not self.attempts:
+            self._output("No guesses yet.")
+            return
+
         for index, attempt in enumerate(self.attempts, start=1):
             self._output(f"{index}. {self._format_guess_feedback(attempt)}")
 
@@ -130,6 +175,8 @@ class Wordle:
 
         if self.has_won:
             self._output("You Won.")
+        elif self.has_quit:
+            self._output("Round ended early. You quit.")
         else:
             self._output("You Lost.")
 

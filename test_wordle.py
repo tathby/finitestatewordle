@@ -41,7 +41,9 @@ class TestWordle(unittest.TestCase):
 
     def test_review_shows_feedback_for_previous_guesses(self):
         entries = iter([
-            "slate", "y", "",
+            "slate", "y",
+            "h",
+            "n",
             "crane", "y", "",
         ])
         outputs = []
@@ -51,17 +53,46 @@ class TestWordle(unittest.TestCase):
 
         slate_rows = [message for message in outputs if "S[x] L[x] A[✓] T[x] E[✓]" in message]
         crane_rows = [message for message in outputs if "C[✓] R[✓] A[✓] N[✓] E[✓]" in message]
-        self.assertTrue(slate_rows, "expected first guess feedback in review output")
+        self.assertTrue(slate_rows, "expected first guess feedback in review/history output")
         self.assertTrue(crane_rows, "expected winning guess feedback in display output")
+
+    def test_quit_from_word_entry(self):
+        entries = iter([
+            "quit",
+            "",
+        ])
+        outputs = []
+
+        game = Wordle("crane", input_func=lambda _: next(entries), output_func=outputs.append)
+        game.PlayRound()
+
+        self.assertTrue(game.has_quit)
+        self.assertEqual(0, game.attempt_count)
+        self.assertIn("Round ended early. You quit.", outputs)
+
+    def test_quit_after_review(self):
+        entries = iter([
+            "slate", "y",
+            "q",
+            "",
+        ])
+        outputs = []
+
+        game = Wordle("crane", input_func=lambda _: next(entries), output_func=outputs.append)
+        game.PlayRound()
+
+        self.assertTrue(game.has_quit)
+        self.assertEqual(1, game.attempt_count)
+        self.assertIn("Round ended early. You quit.", outputs)
 
     def test_playround_loses_after_six_attempts(self):
         entries = iter([
-            "slate", "y", "",
-            "pride", "y", "",
-            "ghost", "y", "",
-            "flint", "y", "",
-            "mound", "y", "",
-            "vibes", "y", "",
+            "slate", "y", "n",
+            "pride", "y", "n",
+            "ghost", "y", "n",
+            "flint", "y", "n",
+            "mound", "y", "n",
+            "vibes", "y",
             "",  # display pause
         ])
         outputs = []
@@ -70,6 +101,7 @@ class TestWordle(unittest.TestCase):
         game.PlayRound()
 
         self.assertFalse(game.has_won)
+        self.assertFalse(game.has_quit)
         self.assertEqual(6, game.attempt_count)
         self.assertIn("You Lost.", outputs)
 
